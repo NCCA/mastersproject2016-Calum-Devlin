@@ -1,0 +1,12 @@
+*.o
+
+# qt files
+*.pro.user*
+.qmake*
+moc/
+moc_*
+ui_*
+# shadow build directories
+build-*
+Makefile
+
