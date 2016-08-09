@@ -1,8 +1,8 @@
 #include <QMouseEvent>
 #include <QGuiApplication>
 
-#include "NGLScene.h"
-
+#include "Scene.h"
+#include "FlockFactory.h"
 
 #include <ngl/Camera.h>
 #include <ngl/Light.h>
@@ -13,7 +13,7 @@
 #include <ngl/ShaderLib.h>
 #include <ngl/Random.h>
 
-NGLScene::NGLScene()
+Scene::Scene()
 {
   // mouse rotation values set to 0
   m_spinXFace=0;
@@ -27,12 +27,12 @@ NGLScene::NGLScene()
   rng->setSeed();
 }
 
-NGLScene::~NGLScene()
+Scene::~Scene()
 {
   std::cout<<"Shutting down NGL, removing VAO's and Shaders\n";
 }
 
-void NGLScene::resizeGL(QResizeEvent *_event)
+void Scene::resizeGL(QResizeEvent *_event)
 {
   m_width=_event->size().width()*devicePixelRatio();
   m_height=_event->size().height()*devicePixelRatio();
@@ -40,14 +40,14 @@ void NGLScene::resizeGL(QResizeEvent *_event)
   m_cam.setShape(45.0f,(float)width()/height(),0.05f,350.0f);
 }
 
-void NGLScene::resizeGL(int _w , int _h)
+void Scene::resizeGL(int _w , int _h)
 {
   m_cam.setShape(45.0f,(float)_w/_h,0.05f,350.0f);
   m_width=_w*devicePixelRatio();
   m_height=_h*devicePixelRatio();
 }
 
-void NGLScene::initializeGL()
+void Scene::initializeGL()
 {
   // we must call this first before any other GL commands to load and link the
   // gl commands from the lib, if this is not done program will crash
@@ -88,9 +88,21 @@ void NGLScene::initializeGL()
   prim->createCone("boid",1,1,4,1);
   prim->createSphere("target",5,2);
   prim->createLineGrid("plane",500,500,500);
+  prim->createLineGrid("quadSquare",1,1,1);
 
-  m_flock.reset(new Flock(640,1.2f));
+  // Prepping for drawing lines.  See Lindenmayer.
+  /*ngl::VertexArrayObject myv = ngl::VertexArrayObject::createVOA(GL_LINES);
+  myv.bind();
+
+  myv.unbind();*/
+
+  //m_flockBasic.reset(new BasicFlock(450,1.2f));
+  std::unique_ptr<FlockFactory> flockMaker(new FlockFactory);
+  m_flock.reset(flockMaker->GenerateFlock(FlockType::NAIVE,&m_flockSize,1.2f, ngl::Vec3(0,0,0)));
+  m_flock.reset(flockMaker->GenerateFlock(FlockType::BINARY,&m_flockSize,1.2f, ngl::Vec3(0,0,0)));
+  //m_flock.reset(flockMaker->GenerateFlock(FlockType::DELAUNAY,m_flockSize,1.2f, ngl::Vec3(0,0,0)));
   m_flock->setCam(&m_cam);
+  //m_flockBasic->setCam(&m_cam);
 
   startTimer(10);
 
@@ -98,7 +110,7 @@ void NGLScene::initializeGL()
   m_text->setScreenSize(this->size().width(),this->size().height());
 }
 
-void NGLScene::loadMatricesToShader()
+void Scene::loadMatricesToShader()
 {
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
 
@@ -114,9 +126,8 @@ void NGLScene::loadMatricesToShader()
   shader->setRegisteredUniform("normalMatrix",normalMatrix);
 }
 
-void NGLScene::paintGL()
+void Scene::paintGL()
 {
-  m_flock->update();
   // clear the screen and depth buffer
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glViewport(0,0,m_width,m_height);
@@ -138,19 +149,22 @@ void NGLScene::paintGL()
   m_globalTransformMatrix.m_m[3][2] = m_modelPos.m_z;
   // set this in the TX stack
 
+  if(m_animate)
+  {
+    m_flock->think();
+  }
   m_flock->draw(m_globalTransformMatrix);
+  //m_flockBasic->draw(m_globalTransformMatrix);
 
-  // get the VBO instance and draw the built in teapot
-  ngl::VAOPrimitives *prim=ngl::VAOPrimitives::instance();
-  unsigned int bodies=0;
   shader->setShaderParam4f("Colour",0.0f,0.0f,0.0f,1.0f);
 
   m_bodyTransform.identity();
   loadMatricesToShader();
 
-  prim->draw("plane");
+  //ngl::VAOPrimitives *prim=ngl::VAOPrimitives::instance();
+  //prim->draw("plane");
   m_text->setColour(1,1,1);
-  QString text=QString("Number of Bodies=%2").arg(bodies);
+  QString text=QString("Number of Boids=%2").arg(m_flockSize);
   m_text->renderText(10,18,text );
 }
 
@@ -159,7 +173,7 @@ void NGLScene::paintGL()
 //----------------------------------------------------------------------------------------------------------------------
 static float INCREMENT=0.05;
 
-void NGLScene::mouseMoveEvent (QMouseEvent * _event)
+void Scene::mouseMoveEvent (QMouseEvent * _event)
 {
   int diffX = _event->x() - m_origXPos;
   int diffY = _event->y() - m_origYPos;
@@ -171,7 +185,6 @@ void NGLScene::mouseMoveEvent (QMouseEvent * _event)
     m_spinYFace += (float) 0.5f * diffX;
     m_origXPos = _event->x();
     m_origYPos = _event->y();
-    update();
   }
   // Translation (X,Y)
   if(_event->buttons() == Qt::RightButton)
@@ -180,19 +193,18 @@ void NGLScene::mouseMoveEvent (QMouseEvent * _event)
     m_origYPos=_event->y();
     m_modelPos.m_x += INCREMENT * diffX;
     m_modelPos.m_y -= INCREMENT * diffY;
-    update();
   }
   // Translation (Z)
   if(_event->buttons() == Qt::MiddleButton)
   {
     m_origYPos = _event->y();
     m_modelPos.m_z += INCREMENT  * diffY;
-    update();
   }
+  update();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void NGLScene::mousePressEvent ( QMouseEvent * _event)
+void Scene::mousePressEvent ( QMouseEvent * _event)
 {
   // This method is called when any mouse button is pressed.
   // Store the value where the mouse was clicked (x,y)
@@ -200,7 +212,7 @@ void NGLScene::mousePressEvent ( QMouseEvent * _event)
   m_origYPos = _event->y();
 }
 
-void NGLScene::wheelEvent(QWheelEvent *_event)
+void Scene::wheelEvent(QWheelEvent *_event)
 {
   if(_event->delta()>0)
   {
@@ -213,17 +225,17 @@ void NGLScene::wheelEvent(QWheelEvent *_event)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void NGLScene::keyPressEvent(QKeyEvent *_event)
+void Scene::keyPressEvent(QKeyEvent *_event)
 {
   // this method is called every time the main window recives a key event.
-  // we then switch on the key value and set the camera in the NGLScene
+  // we then switch on the key value and set the camera in the Scene
   switch (_event->key())
   {
-  // escape key to quite
+  // escape key to quit
   case Qt::Key_Escape : QGuiApplication::exit(EXIT_SUCCESS); break;
-  // turn on wirframe rendering
+  // turn on wireframe rendering
   case Qt::Key_W : glPolygonMode(GL_FRONT_AND_BACK,GL_LINE); break;
-  // turn off wire frame
+  // turn off wireframe (solid)
   case Qt::Key_S : glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); break;
   // show full screen
   case Qt::Key_F : showFullScreen(); break;
@@ -239,21 +251,20 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
   default : break;
   }
   // finally update the GLWindow and re-draw
-  //if (isExposed())
-    update();
-}
-
-void NGLScene::resetSim()
-{
-}
-
-void NGLScene::timerEvent(QTimerEvent *_e)
-{
-  m_flock->update();
   update();
-
 }
 
-void NGLScene::stepAnimation()
+void Scene::resetSim()
 {
 }
+
+void Scene::timerEvent(QTimerEvent *_e)
+{
+  //m_flock->update();
+  update();
+}
+
+void Scene::stepAnimation()
+{
+}
+

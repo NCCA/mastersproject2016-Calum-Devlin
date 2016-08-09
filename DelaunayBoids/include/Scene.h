@@ -1,5 +1,5 @@
-#ifndef NGLSCENE_H__
-#define NGLSCENE_H__
+#ifndef Scene_H__
+#define Scene_H__
 #include <ngl/Camera.h>
 #include <ngl/Colour.h>
 #include <ngl/Light.h>
@@ -8,34 +8,35 @@
 #include <ngl/Obj.h>
 #include <memory>
 #include <QOpenGLWindow>
-#include <memory>
+
+#include "FlockFactory.h"
 #include "Flock.h"
 
 //----------------------------------------------------------------------------------------------------------------------
-/// @file NGLScene.h
+/// @file Scene.h
 /// @brief this class inherits from the Qt OpenGLWindow and allows us to use NGL to draw OpenGL
 /// @author Jonathan Macey
 /// @version 1.0
 /// @date 10/9/13
 /// Revision History :
 /// This is an initial version used for the new NGL6 / Qt 5 demos
-/// @class NGLScene
+/// @class Scene
 /// @brief our main glwindow widget for NGL applications all drawing elements are
 /// put in this file
 //----------------------------------------------------------------------------------------------------------------------
 
-class NGLScene : public QOpenGLWindow
+class Scene : public QOpenGLWindow
 {
   public:
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief ctor for our NGL drawing class
     /// @param [in] parent the parent window to the class
     //----------------------------------------------------------------------------------------------------------------------
-    NGLScene();
+    Scene();
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief dtor must close down ngl and release OpenGL resources
     //----------------------------------------------------------------------------------------------------------------------
-    ~NGLScene();
+    ~Scene();
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief the initialize class is called once when the window is created and we have a valid GL context
     /// use this to setup any default GL stuff
@@ -113,6 +114,7 @@ class NGLScene : public QOpenGLWindow
     //----------------------------------------------------------------------------------------------------------------------
     ngl::Vec3 m_modelPos;
 
+    const int m_flockSize=5000;
     std::unique_ptr<Flock> m_flock;
 
     //----------------------------------------------------------------------------------------------------------------------

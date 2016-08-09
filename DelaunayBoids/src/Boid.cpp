@@ -4,22 +4,41 @@
 #include <ngl/Random.h>
 #include <cmath>
 
-#include "Flock.h"
 #include "Boid.h"
 
 ngl::Random *RNG = ngl::Random::instance();
 
-Boid::Boid(int i, float _vClamp, float _tClamp, Flock *_flock)
+void Boid::debug(ngl::Vec3 pos)
 {
-  m_ID = i;
-  m_pos = RNG->getRandomVec3();
-  m_vel = _vClamp*RNG->getRandomVec3();
+  m_pos = pos;
+}
+
+void Boid::debug2(ngl::Vec3 pos)
+{
+  m_vel = pos;
+}
+
+Boid::Boid(Flock *_parent, int _id)
+{
+  m_pos = 500*RNG->getRandomVec3();
+  //m_vel = _vClamp*RNG->getRandomVec3();
+  m_vel = 0.25*RNG->getRandomVec3();
+  m_col = RNG->getRandomColour();
   m_pos.m_y = 0;
   m_vel.m_y = 0;
-  m_col = RNG->getRandomColour();
-  m_velClamp = _vClamp;
-  m_turnClamp = _tClamp;
-  m_flock = _flock;
+
+  // These are hardcoded.  Is there an efficient way to point to a value in the parent flock?
+  m_flock = _parent;
+  /*m_velClamp = m_flock->m_velClamp;//0.0
+  m_turnClamp = m_flock->m_turnClamp;//0.95
+  m_avoidRadius = m_flock->m_avoidRadius;
+  m_approachRadius = m_flock->m_approachRadius;*/
+  m_velClamp = 0.4f;
+  m_turnClamp = 0.95f;
+  m_avoidRadius = 12.0f;
+  m_approachRadius = 16.0f;
+  m_fieldOfView = -0.65f;
+  m_ID = _id;
 }
 
 Boid::~Boid()
@@ -29,9 +48,10 @@ Boid::~Boid()
 
 void Boid::clear()
 {
-  //m_col = ngl::Colour(0,0,1);
+  //m_col = RNG->getRandomColour();
   m_avoid = ngl::Vec3(0,0,0);
   m_approach = ngl::Vec3(0,0,0);
+  m_align = m_vel;
 }
 
 void Boid::update()
@@ -53,101 +73,139 @@ void Boid::update()
 
 void Boid::think(Boid &_neighbour)
 {
-	float distance = (m_pos - _neighbour.m_pos).length();
+  /*if(m_ID == 1)
+  {
+    _neighbour.m_col = ngl::Colour(1,1,1,1);
+  }*/
+
+  ngl::Vec3 difference = _neighbour.m_pos - m_pos;
 
   // Sum the difference between all boids
-  //if(distance < m_flock->m_boidRadius)
-  if(distance < 9/*20*/ && distance > 3)
+  if(difference.length() <= m_approachRadius)
   {
-    if(m_avoid == ngl::Vec3(0,0,0))
-    {
-      //m_col = ngl::Colour(0,1,0);
-    }
     ngl::Vec3 approach = _neighbour.m_pos - m_pos;
-    //approach.normalize();
-    //approach *= 0.05;
-    m_approach += approach;
-    //std::cout<<approach.m_x<<" "<<approach.m_z<<"\n";
-	}
 
-  // Prioritise avoiding the nearest boid that is too close
-  if(distance <= 3)
-  {
-    ngl::Vec3 avoid = m_pos - _neighbour.m_pos;
-    //m_col = ngl::Colour(1,0,0);
-    avoid /= avoid.length();
-    if((m_avoid.length() > avoid.length()) || (m_avoid.length() == 0))
+    // Field of View condition
+    ngl::Vec3 j = m_vel;
+    ngl::Vec3 k = approach;
+    j.normalize();
+    k.normalize();
+    ngl::Real dotProduct = j.dot(k);
+    if(dotProduct > m_fieldOfView)
     {
-      m_avoid = avoid;
+      m_approach += approach;
+      m_align += _neighbour.m_vel;
+
+      if(difference.length() <= m_avoidRadius)
+      {
+        if((m_avoid.length() > difference.length()) || (m_avoid.length() == 0))
+        {
+          m_avoid = -difference;
+        }
+      }
     }
-  }
+	}
 }
 
-void Boid::move()
+void Boid::move(ngl::Vec3 &_target)
 {
-  ngl::Vec3 m_targetTemp = (m_flock->m_target)-m_pos;
+  ngl::Vec3 m_targetTemp = _target-m_pos;
   m_targetTemp.normalize();
+  ngl::Vec3 m_newVel = m_vel;
 
+  // Priorities:
+  // Avoid nearest boid
+  // Average position with nearest boids
+  // Aim for the target / carry on as before
   if(m_avoid != ngl::Vec3(0,0,0))
   {
     //m_col = ngl::Colour(1,0,0);
+    ngl::Vec3 alpha = m_avoid;
+    ngl::Vec3 beta = m_newVel;
+
+    alpha.normalize();
+    beta.normalize();
+
+    ngl::Vec3 reject = alpha - ((alpha.dot(beta)) * beta);
+    reject.normalize();
+    reject *= 0.04*m_velClamp;
+
+    //m_newVel += reject;
+
     m_avoid.normalize();
-    m_avoid *= 0.05*m_velClamp;
-    m_vel += m_avoid;
+    m_avoid *= 0.04*m_velClamp;
+
+    m_newVel += m_avoid;
   }
   else if(m_approach != ngl::Vec3(0,0,0))
   {
     //m_col = ngl::Colour(0,1,0);
     m_approach.normalize();
-    m_approach *= 0.01*m_velClamp;
-    m_vel += m_approach;
-    m_vel += 0.01*m_velClamp*m_targetTemp;
+    m_approach *= 0.02*m_velClamp;
+    m_newVel += m_approach;
   }
   else
   {
     //m_col = ngl::Colour(0,0,1);
-    m_vel += 0.01*m_velClamp*m_targetTemp;
   }
 
-  if(m_vel.length()>=0.1)
+  m_align.normalize();
+  m_align *= 0.02*m_velClamp;
+  m_newVel += m_align;
+  m_newVel += 0.02*m_velClamp*m_targetTemp;
+
+  // Do not use the inbuilt clamp function.
+  // It operates on all vector elements independently.
+
+  // Limit maximum speed
+  if(m_newVel.length() >= 2.5*m_velClamp)
   {
-    m_vel.normalize();
-    m_vel *=0.1;
+    m_newVel.normalize();
+    m_newVel *= 2.5*m_velClamp;
   }
-  m_pos+=m_vel;
-  //std::cout<<m_vel.m_x<<" "<<m_vel.m_z<<"\n";
-  //m_pos+=m_intermediateVel;
+  // Limit minimum sped
+  if(m_newVel.length() <= 0.01*m_velClamp)
+  {
+    m_newVel.normalize();
+    m_newVel *= 0.01*m_velClamp;
+  }
+
+  if(m_vel.dot(m_newVel) < 0)
+  {
+    m_col = ngl::Colour(1,1,1,1);
+  }
+  else if(m_vel.dot(m_newVel) > 0.24)
+  {
+    //std::cout<<m_vel.dot(m_newVel)<<"  OK: "<<m_newVel.m_x<<" "<<m_newVel.m_z<<"   "<<m_vel.m_x<<" "<<m_vel.m_z<<"\n";
+  }
+
+  m_pos+=m_newVel;
+  m_vel = m_newVel;
 }
 
-void Boid::draw(const ngl::Mat4 &_globalTransformationMatrix) const
+ngl::Mat4 Boid::getTransformation()
 {
   ngl::Transformation transformation;
+
+  // Set Translation
   transformation.setPosition(m_pos.m_x,m_pos.m_y,m_pos.m_z);
-  // Retrieved from Stack Overflow to double check
+
+  // Convert velocity into pitch and yaw rotation.
+  // Calculating roll would also require rate of change of velocity,
+  // But we can get away with leaving roll as 0.
   float pitchProjection = sqrt((m_vel.m_x*m_vel.m_x)+(m_vel.m_z*m_vel.m_z));
   float pitch = -atan2(m_vel.m_y,pitchProjection);
   float yaw = atan2(m_vel.m_x,m_vel.m_z);
   float roll = 0.0f;
   pitch = ngl::degrees(pitch);
   yaw = ngl::degrees(yaw);
+  roll = ngl::degrees(roll);
   transformation.setRotation(pitch,yaw,roll);
-  //transformation.setRotation(m_vel.m_x,m_vel.m_y,m_vel.m_z);
 
-  ngl::Mat4 M = transformation.getMatrix() * _globalTransformationMatrix;
-  ngl::Mat4 MV = M * m_flock->getCam()->getViewMatrix();
-  ngl::Mat4 MVP = MV * m_flock->getCam()->getVPMatrix();
-  ngl::Mat3 normalMatrix = MV;
-  normalMatrix.inverse();
+  return transformation.getMatrix();
+}
 
-  ngl::ShaderLib *shader = ngl::ShaderLib::instance();
-  shader->use("nglDiffuseShader");
-
-  shader->setRegisteredUniform("M",M);
-  shader->setRegisteredUniform("MV",MV);
-  shader->setRegisteredUniform("MVP",MVP);
-  shader->setRegisteredUniform("normalMatrix",normalMatrix);
-  shader->setShaderParam4f("Colour",m_col.m_r,m_col.m_g,m_col.m_b,1);
-
-  ngl::VAOPrimitives *prim = ngl::VAOPrimitives::instance();
-  prim->draw("boid");
+ngl::Colour Boid::getColour()
+{
+  return m_col;
 }
