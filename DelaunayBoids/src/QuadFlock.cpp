@@ -34,17 +34,18 @@ QuadFlock::~QuadFlock()
 
 void QuadFlock::think()
 {
+  moveTarget();
+  m_target = ngl::Vec3(750*sin(theta),0,750*cos(theta));
+
   QuadTree *thisFlock = new QuadTree(ngl::Vec3(0,0,0),2048.0f,2048.0f/*, getCam()*/);
   for(auto &boid : m_boids)
   {
     thisFlock->setDefaultLocalRoot(&boid);
+    //thisFlock->addBoid(&boid);
+    //thisFlock->addBoid2(boid);
+    //thisFlock->addBoid3(boid);
   }
   m_flock.reset(thisFlock);
-
-  moveTarget();
-  m_target = ngl::Vec3(750*sin(theta),0*20*sin(3*theta),750*cos(theta));
-
-  //m_flock->think();
 
   for(auto &boid : m_boids)
   {
@@ -54,7 +55,6 @@ void QuadFlock::think()
   for(auto &boid : m_boids)
   {
     boid.m_localRoot->think(&boid);
-    //m_flock->think(&boid);
   }
 
   for(auto &boid : m_boids)

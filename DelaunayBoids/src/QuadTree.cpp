@@ -72,13 +72,15 @@ void QuadTree::addBoid(Boid *_boid)
   if(isEmpty)
   {
     isEmpty = false;
-    m_leaf = _boid;
+    //m_leaf = _boid;
 
     // This will give each boid a pointer
     // to the smallest QuadTree that completely contains it
-    if(boidInQuad(m_leaf))
+    //if(boidInQuad(m_leaf))
+    if(boidInQuad(_boid))
     {
-      m_leaf->m_localRoot = this;
+      //m_leaf->m_localRoot = this;
+      _boid->m_localRoot = this;
     }
   }
   // If this QuadTree already more than one child, pass _boid down
@@ -93,17 +95,17 @@ void QuadTree::addBoid(Boid *_boid)
   {
     isParent = true;
     // Break leaf into 4 nodes
-    ngl::Vec3 offset = ngl::Vec3(m_width,m_height,m_depth)/4.0f;
-    //successorQuadTree = new QuadTree(m_center + offset, m_width/2,m_height/2, Quadrant::NE, this);
-    m_successors.push_back(new QuadTree(m_center + offset, m_width/2, m_depth/2, Quadrant::NE, this));
-    m_successors.push_back(new QuadTree(m_center - offset, m_width/2, m_depth/2, Quadrant::SW, this));
+    ngl::Vec3 offset1 = ngl::Vec3(m_width,m_height,m_depth)/4.0f;
+    m_successors.push_back(new QuadTree(m_center + offset1, m_width/2, m_depth/2, Quadrant::NE, this));
+    m_successors.push_back(new QuadTree(m_center - offset1, m_width/2, m_depth/2, Quadrant::SW, this));
 
-    offset = ngl::Vec3(-m_width,m_height,m_depth)/4.0f;
-    m_successors.push_back(new QuadTree(m_center + offset, m_width/2, m_depth/2, Quadrant::NW, this));
-    m_successors.push_back(new QuadTree(m_center - offset, m_width/2, m_depth/2, Quadrant::SE, this));
+    ngl::Vec3 offset2 = ngl::Vec3(-m_width,m_height,m_depth)/4.0f;
+    m_successors.push_back(new QuadTree(m_center + offset2, m_width/2, m_depth/2, Quadrant::NW, this));
+    m_successors.push_back(new QuadTree(m_center - offset2, m_width/2, m_depth/2, Quadrant::SE, this));
 
     // Place existing Boid
-    addBoidToQuadrant(m_leaf);
+    //addBoidToQuadrant(m_leaf);
+    addBoidToQuadrant(m_allLeaves[0]);
 
     // Place new Boid
     addBoidToQuadrant(_boid);
@@ -111,6 +113,80 @@ void QuadTree::addBoid(Boid *_boid)
   m_allLeaves.push_back(_boid);
 }
 // LOOK INTO ONLY ADDING A NEW QUADRANT WHEN REQUIRED (during creation)
+
+void QuadTree::addBoid2(Boid _boid)
+{
+  // If this QuadTree has neither child nor successors,
+  // we create a child
+  if(isEmpty)
+  {
+    isEmpty = false;
+    m_leaf = &_boid;
+  }
+  // If this QuadTree already has successors, pass *_boid down
+  else if(isParent)
+  {
+    // Place new Boid
+    addBoidToQuadrant(&_boid);
+  }
+  // Otherwise, we need to transition from single child to many successors.
+  // Create 4 successors, and place 2 children, possibly recursive
+  else
+  {
+    isParent = true;
+    // Break leaf into 4 nodes
+    ngl::Vec3 offset = ngl::Vec3(m_width,0,m_height)/4.0f;
+    NE = new QuadTree(m_center + offset, m_width/2,m_height/2, Quadrant::NE, this);
+    SW = new QuadTree(m_center - offset, m_width/2,m_height/2, Quadrant::SW, this);
+
+    offset = offset = (-m_width,0,m_height)/4.0f;
+    NW = new QuadTree(m_center + offset, m_width/2,m_height/2, Quadrant::NW, this);
+    SE = new QuadTree(m_center - offset, m_width/2,m_height/2, Quadrant::SE, this);
+
+    // Place existing Boid
+    addBoidToQuadrant(m_leaf);
+
+    // Place new Boid
+    addBoidToQuadrant(&_boid);
+  }
+}
+
+void QuadTree::addBoid3(Boid &_boid)
+{
+  // If this QuadTree has neither child nor successors,
+  // we create a child
+  if(isEmpty)
+  {
+    isEmpty = false;
+    m_leaf = &_boid;
+  }
+  // If this QuadTree already has successors, pass *_boid down
+  else if(isParent)
+  {
+    // Place new Boid
+    addBoidToQuadrant(&_boid);
+  }
+  // Otherwise, we need to transition from single child to many successors.
+  // Create 4 successors, and place 2 children, possibly recursive
+  else
+  {
+    isParent = true;
+    // Break leaf into 4 nodes
+    ngl::Vec3 offset = ngl::Vec3(m_width,0,m_height)/4.0f;
+    NE = new QuadTree(m_center + offset, m_width/2,m_height/2, Quadrant::NE, this);
+    SW = new QuadTree(m_center - offset, m_width/2,m_height/2, Quadrant::SW, this);
+
+    offset = offset = (-m_width,0,m_height)/4.0f;
+    NW = new QuadTree(m_center + offset, m_width/2,m_height/2, Quadrant::NW, this);
+    SE = new QuadTree(m_center - offset, m_width/2,m_height/2, Quadrant::SE, this);
+
+    // Place existing Boid
+    addBoidToQuadrant(m_leaf);
+
+    // Place new Boid
+    addBoidToQuadrant(&_boid);
+  }
+}
 
 void QuadTree::addBoidToQuadrant(Boid *_boid)
 {
@@ -197,30 +273,126 @@ void QuadTree::prune()
   }
 }
 
+Quadrant QuadTree::getOpposingQuadrant(Quadrant _q)
+{
+  /*switch(_q)
+  {
+    case Quadrant::NE : return Quadrant::SW;
+    case Quadrant::NW : return Quadrant::SE;
+    case Quadrant::SW : return Quadrant::NE;
+    case Quadrant::SE : return Quadrant::NW;
+  }*/
+  return Quadrant::ROOT;
+}
+
 /*************************************************************/
-// The second IF statement can probably become an OR condition in the first
 void QuadTree::think(Boid *_boid)
 {
-  // If the current QuadTree is completely inside the boid's radius,
-  // We save time and skip to iterating over all leaves
-  if(radiusContainsQuadTree(_boid))
+  /*
+  Step 1:
+  Boid is completely in Quadrant, and in at least 2 subquadrants
+  If center point is within radius, then boid is in 4 subquadrants
+  Otherwise, identify the subquadrant, and choose +/- 1 of quadtype (mod 4) for a little speed
+
+  Step 2:
+  Neither boid nor quadrant completely contain each other
+  boid may be in 1-4 subquadrants
+  Again, if center point is in radius, evaluate all 4 subquadrants
+
+  Step 3:
+  By this iteration, it is possible for the boid to contain the quadrant.
+  If so, then all three siblings need reiteration
+
+  Step 4:
+  We could now have 0-3 subquadrants completely contained in the boid - not 4, as that would be caught in step 3
+  */
+
+  // Terminal condition: if we have reached a leaf node, compare the vector of leaves (length 1).
+  /*if(!isEmpty && !isParent)
   {
     for(auto &neighbour : m_allLeaves)
     {
-      if(_boid != neighbour)
-      {
-        _boid->think(*neighbour);
-      }
+      _boid->think(*neighbour);
     }
   }
-  // Edge case
-  else if(!isEmpty && !isParent)
+  // Pass down to the children nodes: either ignore, execute recursively, or take a shortcut.
+  else
+  {
+    // Calculate which quadrant the boid is in, and its relative displacement to this quadrant
+    float difference = (m_center - _boid->m_pos).length();
+    Quadrant boidQuadrant = pointInQuad2(_boid->m_pos);
+
+    if(difference < _boid->m_approachRadius)
+    {
+      // All children overlap the boid radius, so all need evaluating
+      for(auto &successor : m_successors)
+      {
+        if(!successor->isEmpty)
+        {
+					//if(successor->m_quadrantType == boidQuadrant)
+          {
+            // If this successor QuadTree is completely inside the boid's radius,
+            // We save time and skip to iterating over all leaves
+						if(successor->radiusContainsQuadTree(_boid))
+            {
+              for(auto &neighbour : successor->m_allLeaves)
+              {
+                _boid->think(*neighbour);
+              }
+						}
+            else
+            {
+              successor->think(_boid);
+						}
+          }
+					//else
+					{
+						//successor->think(_boid);
+          }
+        }
+      }
+    }
+    else
+    {
+      // This entire quadrant may be too far away from the boid -> all successors are too far away also.
+			//if(boidQuadrant != Quadrant::ROOT)
+      {
+        // This quadrant's centre point is too far away from the boid, so at least 1 quadrant can be skipped
+        // I.E. The quadrant opposite the one containing the boid
+        boidQuadrant = getOpposingQuadrant(boidQuadrant);
+
+        for(auto &successor : m_successors)
+        {
+          if(!successor->isEmpty)
+          {
+						if(successor->m_quadrantType != boidQuadrant)
+            {
+              successor->think(_boid);
+            }
+          }
+        }
+      }
+    }
+	}
+  return;*/
+
+  // If the current QuadTree is completely inside the boid's radius,
+  // We save time and skip to iterating over all leaves
+  // We also include the terminal step as a condition because m_allLeaves will only contain 1 leaf
+  if(radiusContainsQuadTree(_boid) || (!isEmpty && !isParent))
+  {
+    for(auto &neighbour : m_allLeaves)
+    {
+      _boid->think(*neighbour);
+    }
+  }
+  /*else if(!isEmpty && !isParent)
   {
     if(_boid != m_leaf)
     {
       _boid->think(*m_leaf);
     }
-  }
+  }*/
   else
   {
     // Will only run when this Quadtree is not completely inside the radius, and has multiple children
@@ -276,7 +448,7 @@ bool QuadTree::radiusContainsQuadTree(Boid *_boid)
   return true;
 }
 
-// If there is any overlap at all between boid and quadrant.
+// If there is any overlap at all between boid radius and quadrant.
 // The first test fails positive: some non-overlapping quadrants return true.
 bool QuadTree::isNearQuadrant(Boid *_boid)
 {
@@ -285,7 +457,7 @@ bool QuadTree::isNearQuadrant(Boid *_boid)
   // If so, the boids in the quadrant may be neighbours to consider.
 
   // Assume the container is a Square/Cube
-  // for cube, use sqrt(3)
+  // for Octant cubes, use sqrt(3)
   float diagonal = sqrt(2)*m_width/2;
   float displacement = (_boid->m_pos - m_center).length();
   if((diagonal + _boid->m_approachRadius) > displacement)
@@ -354,6 +526,21 @@ bool QuadTree::pointInQuad(ngl::Vec3 _point)
   return false;
 }
 
+Quadrant QuadTree::pointInQuad2(ngl::Vec3 _point)
+{
+  for(auto &successor : m_successors)
+  {
+    if((_point.m_x >= successor->m_left && _point.m_x <= successor->m_right)
+       //&& (_point.m_y >= successor->m_bottom && _point.m_y <= successor->m_top)
+       && (_point.m_z >= successor->m_back && _point.m_z <= successor->m_front))
+    {
+      return m_quadrantType;
+    }
+  }
+  // Successor nodes are never ROOT type, so this is acceptable as a default return value.
+  return Quadrant::ROOT;
+}
+
 // Shorthand for 'Is the Boid and its radius of interest COMPLETELY inside this quadrant?'
 // the first test fails negative: boids towards the corners of the quadrant can return false.
 bool QuadTree::boidInQuad(Boid *_boid)
@@ -410,8 +597,10 @@ void QuadTree::draw(const ngl::Mat4& _globalTransformationMatrix, ngl::Mat4 &_V,
 
     if(!isParent)
     {
-      ngl::Colour boidColour = m_leaf->getColour();
-      M = m_leaf->getTransformation() * _globalTransformationMatrix;
+      //ngl::Colour boidColour = m_leaf->getColour();
+      //M = m_leaf->getTransformation() * _globalTransformationMatrix;
+      ngl::Colour boidColour = m_allLeaves[0]->getColour();
+      M = m_allLeaves[0]->getTransformation() * _globalTransformationMatrix;
       MV = M * _V;
       MVP = MV * _VP;
       normalMatrix = MV;
@@ -444,10 +633,12 @@ void QuadTree::draw(const ngl::Mat4& _globalTransformationMatrix, ngl::Mat4 &_V,
         prim->draw("quadSquare");
       }*/
     }
-
-    for(auto &child : m_successors)
+    else
     {
-      child->draw(_globalTransformationMatrix, _V, _VP);
+      for(auto &child : m_successors)
+      {
+        child->draw(_globalTransformationMatrix, _V, _VP);
+      }
     }
   }
 }

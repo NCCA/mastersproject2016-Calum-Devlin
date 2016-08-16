@@ -18,9 +18,8 @@ Flock *FlockFactory::GenerateFlock(FlockType _flocktype, const int *_flockSize, 
 
   if(_flocktype == FlockType::DELAUNAY)
   {
-    //return new DelFlock(_flockSize, _boidRadius, _flockOrigin);
+    return new DelFlock(_flockSize, _boidRadius, _flockOrigin);
   }
 
-  // Just a placeholder return statement until the other two are ready to go.
   return new NaiveFlock(_flockSize, _boidRadius, _flockOrigin);
 }

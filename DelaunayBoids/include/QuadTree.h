@@ -3,14 +3,19 @@
 
 #include <vector>
 #include <ngl/Vec3.h>
-#include <Boid.h>
+#include "Boid.h"
 
+/******************************************************************************
+ * Much commented out code allows the potential for an upgrade to 3D octants. *
+ * But some code has not been written yet, so beware of gaps that allow bugs. *
+ ******************************************************************************/
+
+// Letters are pairwise: Up/Down; North/South; West/East
 enum class Quadrant
 {
   ROOT, NE, NW, SE, SW
 };
 
-// Letters are pairwise: Up/Down; North/South; West/East
 enum class Octant
 {
   ROOT, UNW, UNE, USW, USE, DNW, DNE, DSW, DSE
@@ -60,14 +65,19 @@ class QuadTree
     std::vector<Boid*> m_allLeaves;
 
     void addBoid(Boid *_boid);
+    void addBoid2(Boid _boid);
+    void addBoid3(Boid &_boid);
     void addBoidToQuadrant(Boid *_boid);
     void testBoid(Boid *_boid);
     void prune();
+
+    Quadrant getOpposingQuadrant(Quadrant _q);
 
     bool radiusContainsQuadTree(Boid *_boid);
     bool isNearQuadrant(Boid *_boid);
     bool boidInQuad(Boid *_boid);
     bool pointInQuad(ngl::Vec3 _point);
+    Quadrant pointInQuad2(ngl::Vec3 _point);
 
     QuadTree *NE;
     QuadTree *NW;

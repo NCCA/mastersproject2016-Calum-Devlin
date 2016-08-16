@@ -4,6 +4,7 @@
 #include <ngl/Vec3.h>
 #include <ngl/Colour.h>
 #include <ngl/Camera.h>
+#include <vector>
 
 class Flock;  class QuadTree;
 
@@ -12,6 +13,7 @@ class Boid
   friend class QuadTree;
 
   public:
+    Boid();
     Boid(Flock *_parent, int _id);
     ~Boid();
 
@@ -23,17 +25,34 @@ class Boid
 
     ngl::Mat4 getTransformation();
     ngl::Colour getColour();
+    int m_ID;
+    bool m_canMove;
 
     void debug(ngl::Vec3 pos);
-    void debug2(ngl::Vec3 pos);
+    void debug2(ngl::Vec3 vel);
+    void setSpecificPosVel(ngl::Vec3 _pos, ngl::Vec3 _vel);
 
     QuadTree *m_localRoot;
+    //std::vector<DelaunayEdge> m_localEdges;
+
+
+
+
+
+    ngl::Vec3 m_pos;
+
+
+
+
+
+
+
 
   private:
     const Flock *m_flock;
-    int m_ID;
 
-    ngl::Vec3 m_pos;
+    int m_neighbourLimit;
+    int m_currentNeighbourCount;
     ngl::Vec3 m_vel;
     ngl::Vec3 m_avoid;
     ngl::Vec3 m_approach;

@@ -19,7 +19,7 @@ Scene::Scene()
   m_spinXFace=0;
   m_spinYFace=0;
   setTitle("Delaunay Boid Demonstration");
-  m_animate=true;
+  m_animate=false;
   m_randomPlace=false;
   m_bboxDraw=false;
   m_wireframe=false;
@@ -76,7 +76,7 @@ void Scene::initializeGL()
   // Now we will create a basic Camera from the graphics library
   // This is a static camera so it only needs to be set once
   // First create Values for the camera position
-  ngl::Vec3 from(0,1,10);
+	ngl::Vec3 from(0,20,200);
   ngl::Vec3 to(0,0,0);
   ngl::Vec3 up(0,1,0);
   // now load to our new camera
@@ -98,9 +98,9 @@ void Scene::initializeGL()
 
   //m_flockBasic.reset(new BasicFlock(450,1.2f));
   std::unique_ptr<FlockFactory> flockMaker(new FlockFactory);
-  m_flock.reset(flockMaker->GenerateFlock(FlockType::NAIVE,&m_flockSize,1.2f, ngl::Vec3(0,0,0)));
-  m_flock.reset(flockMaker->GenerateFlock(FlockType::BINARY,&m_flockSize,1.2f, ngl::Vec3(0,0,0)));
-  //m_flock.reset(flockMaker->GenerateFlock(FlockType::DELAUNAY,m_flockSize,1.2f, ngl::Vec3(0,0,0)));
+  //m_flock.reset(flockMaker->GenerateFlock(FlockType::NAIVE,&m_flockSize,1.2f, ngl::Vec3(0,0,0)));
+  //m_flock.reset(flockMaker->GenerateFlock(FlockType::BINARY,&m_flockSize,1.2f, ngl::Vec3(0,0,0)));
+  m_flock.reset(flockMaker->GenerateFlock(FlockType::DELAUNAY,&m_flockSize,1.2f, ngl::Vec3(0,0,0)));
   m_flock->setCam(&m_cam);
   //m_flockBasic->setCam(&m_cam);
 

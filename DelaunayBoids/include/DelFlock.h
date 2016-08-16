@@ -2,33 +2,33 @@
 #define DELFLOCK_H
 
 #include <vector>
-#include <ngl/Camera.h>
+#include <ngl/VertexArrayObject.h>
 
-#include <Boid.h>
+#include "Flock.h"
+#include "DelaunayEdge.h"
+#include "DelaunayTriangle.h"
 
-class DelFlock
+class DelFlock : public Flock
 {
   public:
-    DelFlock(int _flockSize, float _boidRadius);
-    int m_flockSize;
-    float m_boidRadius;
-    ngl::Vec3 m_target;
+    DelFlock(const int *_flockSize, float _boidRadius, ngl::Vec3 _flockOrigin);
+    virtual ~DelFlock();
 
-    void draw(const ngl::Mat4 &_globalTransformationMatrix) const;
+    //void debug();
 
-    inline void setCam(ngl::Camera *_cam){m_cam=_cam;}
-    inline ngl::Camera *getCam()const {return m_cam;}
-    inline void setShaderName(const std::string &_n){m_shaderName=_n;}
-    inline const std::string getShaderName()const {return m_shaderName;}
+    virtual void think();
+    virtual void draw(const ngl::Mat4 &_globalTransformationMatrix) const;
+
   private:
-    std::string m_shaderName;
-    // Camera pointer
-    ngl::Camera *m_cam;
+    const int *m_flockSize = Flock::m_flockSize;
+    int m_delaunayEdges = 3* *m_flockSize - 7;
+    std::vector<DelaunayEdge> m_edges;
+    std::vector<Boid> m_cornerBoids;
 
-    std::vector<Boid> m_boids;
+    void setDelaunayIndices();
+    bool isLeft(ngl::Vec3 *_from, ngl::Vec3 *_to, ngl::Vec3 *_side);
 
-    float theta;
-    const float thetaStep = 0.0001;
+    std::unique_ptr<ngl::VertexArrayObject> edges;
 };
 
 #endif // DELFLOCK_H

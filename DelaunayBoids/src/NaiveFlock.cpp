@@ -36,7 +36,7 @@ void NaiveFlock::think()
 {
   // Update the target
   moveTarget();
-  m_target = ngl::Vec3(750*sin(10*theta),0*20*sin(28*theta),750*cos(10*theta));
+  m_target = ngl::Vec3(750*sin(theta),0,750*cos(theta));
 
   /*clock_t t;
   clock_t t2;
@@ -47,11 +47,7 @@ void NaiveFlock::think()
     boid.clear();
     for(auto &neighbour : m_boids)
     {
-      // Avoid self-comparison
-      if(&boid != &neighbour)
-      {
-        boid.think(neighbour);
-      }
+      boid.think(neighbour);
     }
   }
   /*t2 = clock() - t;
