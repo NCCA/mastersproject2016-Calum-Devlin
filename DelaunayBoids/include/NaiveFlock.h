@@ -6,16 +6,21 @@
 class NaiveFlock : public Flock
 {
   public:
-    NaiveFlock(const int *_flockSize, float _boidRadius, ngl::Vec3 _flockOrigin);
+    NaiveFlock(const int *_flockSize,
+               ngl::Vec3 _flockOrigin,
+               const float *_velClamp,
+               const float *_turnClamp,
+               const float *_avoidRadius,
+               const float *_approachRadius,
+               const float *_fieldOfView,
+               const int *_neighbourLimit
+               );
     virtual ~NaiveFlock();
 
     void debug();
 
     virtual void think();
-    virtual void draw(const ngl::Mat4& _globalTransformationMatrix) const;
-
-  private:
-    const int *m_flockSize = Flock::m_flockSize;
+    virtual void draw(const ngl::Mat4& _globalTransformationMatrix);
 };
 
 #endif // NAIVEFLOCK_H

@@ -5,6 +5,13 @@ DelaunayTriangle::DelaunayTriangle()
   m_exists = false;
 }
 
+DelaunayTriangle::DelaunayTriangle(Boid *_b1, Boid *_b2)
+{
+  m_exists = false;
+  b1 = _b1;
+  b2 = _b2;
+}
+
 DelaunayTriangle::DelaunayTriangle(Boid *_b1, Boid *_b2, Boid *_b3)
 {
   m_exists = true;
@@ -14,35 +21,35 @@ DelaunayTriangle::DelaunayTriangle(Boid *_b1, Boid *_b2, Boid *_b3)
   b3 = _b3;
 
   // Mid-points between each pair of boids
-  ngl::Vec3 mp3 = (b1->m_pos + b2->m_pos)/2;
+  //ngl::Vec3 mp3 = (b1->m_pos + b2->m_pos)/2;
   ngl::Vec3 mp2 = (b1->m_pos + b3->m_pos)/2;
   ngl::Vec3 mp1 = (b2->m_pos + b3->m_pos)/2;
 
   // Vectors from the mid points towards the corner boids
-  ngl::Vec3 mp12 = b2->m_pos - mp1;// Vector from mid point to right
-  ngl::Vec3 mp23 = b3->m_pos - mp2;// vector to top left
-  ngl::Vec3 mp31 = b1->m_pos - mp3;// vector up
+  ngl::Vec3 mp12 = b2->m_pos - mp1;
+  ngl::Vec3 mp23 = b3->m_pos - mp2;
+  //ngl::Vec3 mp31 = b1->m_pos - mp3;
 
-  ngl::Vec3 mp13 = b3->m_pos - mp1;// vector from mid point to left
-  ngl::Vec3 mp21 = b1->m_pos - mp2;// vector to bottom right
-  ngl::Vec3 mp32 = b2->m_pos - mp3;// vector down
+  //ngl::Vec3 mp13 = b3->m_pos - mp1;
+  //ngl::Vec3 mp21 = b1->m_pos - mp2;
+  //ngl::Vec3 mp32 = b2->m_pos - mp3;
 
   // Vectors that perpendicularly bisect each edge.
   // Beacuase we have no knowledge of what order the boids will be presented,
   // there are vectors towards and away from the circumcenter
   ngl::Vec3 bisector1A = ngl::Vec3(mp12.m_z,0,-mp12.m_x);
   ngl::Vec3 bisector2A = ngl::Vec3(mp23.m_z,0,-mp23.m_x);
-  ngl::Vec3 bisector3A = ngl::Vec3(mp31.m_z,0,-mp31.m_x);
+  //ngl::Vec3 bisector3A = ngl::Vec3(mp31.m_z,0,-mp31.m_x);
 
-  ngl::Vec3 bisector1B = ngl::Vec3(mp13.m_z,0,-mp13.m_x);
-  ngl::Vec3 bisector2B = ngl::Vec3(mp21.m_z,0,-mp21.m_x);
-  ngl::Vec3 bisector3B = ngl::Vec3(mp32.m_z,0,-mp32.m_x);
+  //ngl::Vec3 bisector1B = ngl::Vec3(mp13.m_z,0,-mp13.m_x);
+  //ngl::Vec3 bisector2B = ngl::Vec3(mp21.m_z,0,-mp21.m_x);
+  //ngl::Vec3 bisector3B = ngl::Vec3(mp32.m_z,0,-mp32.m_x);
 
   // The mathematics is converted from the StackOverflow thread here:
   // http://www.stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
   // Some error cases have been ignored, due to the assumption that this is a valid triangle
   // All vectors of the form *2 give the same answer, the circumcenter
-  ngl::Real u = ((mp2-mp1).cross(bisector1A)/(bisector1A.cross(bisector2A))).m_y;
+  //ngl::Real u = ((mp2-mp1).cross(bisector1A)/(bisector1A.cross(bisector2A))).m_y;
   ngl::Real v = ((mp2-mp1).cross(bisector2A)/(bisector1A.cross(bisector2A))).m_y;
   ngl::Vec3 u2 = mp1 + v * bisector1A;
   /*ngl::Vec3 v2 = mp2 + u * bisector2A;
@@ -62,12 +69,24 @@ DelaunayTriangle::DelaunayTriangle(Boid *_b1, Boid *_b2, Boid *_b3)
   m_circumcenter = u2;
 }
 
-/*DelaunayTriangle::DelaunayTriangle(DelaunayEdge _de1, DelaunayEdge _de2, DelaunayEdge _de3)
+// An abbreviation of the above method when 1 boid changes
+void DelaunayTriangle::update(Boid *_b3)
 {
-  //de1 = _de1;
-  //de2 = _de2;
-  //de3 = _de3;
-}*/
+  m_exists = true;
+  b3 = _b3;
+
+  ngl::Vec3 mp2 = (b1->m_pos + b3->m_pos)/2;
+  ngl::Vec3 mp1 = (b2->m_pos + b3->m_pos)/2;
+
+  ngl::Vec3 mp12 = b2->m_pos - mp1;
+  ngl::Vec3 mp23 = b3->m_pos - mp2;
+
+  ngl::Vec3 bisector1A = ngl::Vec3(mp12.m_z,0,-mp12.m_x);
+  ngl::Vec3 bisector2A = ngl::Vec3(mp23.m_z,0,-mp23.m_x);
+
+  ngl::Real v = ((mp2-mp1).cross(bisector2A)/(bisector1A.cross(bisector2A))).m_y;
+  m_circumcenter = mp1 + v * bisector1A;
+}
 
 float DelaunayTriangle::cross2D(ngl::Vec2 u, ngl::Vec2 v)
 {

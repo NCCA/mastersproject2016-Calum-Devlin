@@ -14,14 +14,12 @@ class Boid
 
   public:
     Boid();
-    Boid(Flock *_parent, int _id);
+    Boid(int _id, const float *_velClamp, const float *_turnClamp, const float *_avoidRadius, const float *_approachRadius, const float *_fieldOfView, const int *_neighbourLimit);
     ~Boid();
 
     void clear();
-    void update();
     void think(Boid &_neighbour);
     void move(ngl::Vec3 &_target);
-    //void draw(const ngl::Mat4 &_globalTransformationMatrix) const;
 
     ngl::Mat4 getTransformation();
     ngl::Colour getColour();
@@ -33,26 +31,13 @@ class Boid
     void setSpecificPosVel(ngl::Vec3 _pos, ngl::Vec3 _vel);
 
     QuadTree *m_localRoot;
-    //std::vector<DelaunayEdge> m_localEdges;
-
-
-
-
 
     ngl::Vec3 m_pos;
 
-
-
-
-
-
-
-
   private:
-    const Flock *m_flock;
-
-    int m_neighbourLimit;
+    const int *m_neighbourLimit;
     int m_currentNeighbourCount;
+
     ngl::Vec3 m_vel;
     ngl::Vec3 m_avoid;
     ngl::Vec3 m_approach;
@@ -60,14 +45,14 @@ class Boid
 
     ngl::Colour m_col;
 
-    float m_velClamp;
-    float m_turnClamp;
-    float m_avoidRadius;
-    float m_approachRadius;
+    const float *m_velClamp;
+    const float *m_turnClamp;
+    const float *m_avoidRadius;
+    const float *m_approachRadius;
 
     // m_fieldOfView is used for comparison against a dot product of normalised vectors.
     // Should be kept between [1,-1]
-    float m_fieldOfView;
+    const float *m_fieldOfView;
 };
 
 #endif // BOID

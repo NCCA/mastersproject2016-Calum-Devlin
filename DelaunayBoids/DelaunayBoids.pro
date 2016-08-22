@@ -44,3 +44,5 @@ else{ # note brace must be here
 #QMAKE_CXXFLAGS_DEBUG *= -pg
 #QMAKE_LFLAGS_DEBUG *= -pg
 
+LIBS += -fopenmp
+QMAKE_CXXFLAGS += -fopenmp

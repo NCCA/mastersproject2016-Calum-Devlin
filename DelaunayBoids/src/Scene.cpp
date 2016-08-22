@@ -7,7 +7,6 @@
 #include <ngl/Camera.h>
 #include <ngl/Light.h>
 #include <ngl/Transformation.h>
-#include <ngl/Material.h>
 #include <ngl/NGLInit.h>
 #include <ngl/VAOPrimitives.h>
 #include <ngl/ShaderLib.h>
@@ -18,11 +17,10 @@ Scene::Scene()
   // mouse rotation values set to 0
   m_spinXFace=0;
   m_spinYFace=0;
-  setTitle("Delaunay Boid Demonstration");
+  setTitle("Delaunay Boid Demonstration, by Calum Devlin");
   m_animate=false;
-  m_randomPlace=false;
-  m_bboxDraw=false;
   m_wireframe=false;
+  m_inspectIndex = -1;
   ngl::Random *rng=ngl::Random::instance();
   rng->setSeed();
 }
@@ -57,7 +55,7 @@ void Scene::initializeGL()
   glEnable(GL_DEPTH_TEST);
   // enable multisampling for smoother drawing
   glEnable(GL_MULTISAMPLE);
-  glClearColor(0.6f, 0.6f, 0.6f, 1.0f);			   // Grey Background
+  glClearColor(0.8f, 0.8f, 0.8f, 1.0f);			   // Grey Background
   // enable depth testing for drawing
   glEnable(GL_DEPTH_TEST);
   glViewport(0,0,width(),height());
@@ -79,32 +77,22 @@ void Scene::initializeGL()
 	ngl::Vec3 from(0,20,200);
   ngl::Vec3 to(0,0,0);
   ngl::Vec3 up(0,1,0);
-  // now load to our new camera
   m_cam.set(from,to,up);
-  // set the shape using FOV 45 Aspect Ratio based on Width and Height
-  // The final two are near and far clipping planes of 0.5 and 10
-  m_cam.setShape(50,(float)720.0/576.0,0.05,350);
+
+  // Set the shape using FOV 45 Aspect Ratio based on Width and Height
+  // The final two are near and far clipping planes
+  m_cam.setShape(50,(float)m_width/m_height,0.05,360);
   ngl::VAOPrimitives *prim = ngl::VAOPrimitives::instance();
   prim->createCone("boid",1,1,4,1);
   prim->createSphere("target",5,2);
   prim->createLineGrid("plane",500,500,500);
   prim->createLineGrid("quadSquare",1,1,1);
 
-  // Prepping for drawing lines.  See Lindenmayer.
-  /*ngl::VertexArrayObject myv = ngl::VertexArrayObject::createVOA(GL_LINES);
-  myv.bind();
-
-  myv.unbind();*/
-
-  //m_flockBasic.reset(new BasicFlock(450,1.2f));
   std::unique_ptr<FlockFactory> flockMaker(new FlockFactory);
-  //m_flock.reset(flockMaker->GenerateFlock(FlockType::NAIVE,&m_flockSize,1.2f, ngl::Vec3(0,0,0)));
-  //m_flock.reset(flockMaker->GenerateFlock(FlockType::BINARY,&m_flockSize,1.2f, ngl::Vec3(0,0,0)));
-  m_flock.reset(flockMaker->GenerateFlock(FlockType::DELAUNAY,&m_flockSize,1.2f, ngl::Vec3(0,0,0)));
+  m_flock.reset(flockMaker->GenerateFlock(m_flockType,&m_flockSize, ngl::Vec3(0,0,0), &m_velClamp, &m_turnClamp, &m_avoidRadius, &m_approachRadius, &m_fieldOfView, &m_neighbourLimit));
   m_flock->setCam(&m_cam);
-  //m_flockBasic->setCam(&m_cam);
 
-  startTimer(10);
+  startTimer(0);
 
   m_text.reset(new  ngl::Text(QFont("Arial",18)));
   m_text->setScreenSize(this->size().width(),this->size().height());
@@ -154,7 +142,6 @@ void Scene::paintGL()
     m_flock->think();
   }
   m_flock->draw(m_globalTransformMatrix);
-  //m_flockBasic->draw(m_globalTransformMatrix);
 
   shader->setShaderParam4f("Colour",0.0f,0.0f,0.0f,1.0f);
 
@@ -164,7 +151,7 @@ void Scene::paintGL()
   //ngl::VAOPrimitives *prim=ngl::VAOPrimitives::instance();
   //prim->draw("plane");
   m_text->setColour(1,1,1);
-  QString text=QString("Number of Boids=%2").arg(m_flockSize);
+  QString text=QString("Number of Boids=%1.  Boid Inspector=%2").arg(m_flockSize).arg(m_inspectIndex);
   m_text->renderText(10,18,text );
 }
 
@@ -212,6 +199,7 @@ void Scene::mousePressEvent ( QMouseEvent * _event)
   m_origYPos = _event->y();
 }
 
+// Change the panning factor with the scroll wheel
 void Scene::wheelEvent(QWheelEvent *_event)
 {
   if(_event->delta()>0)
@@ -241,12 +229,12 @@ void Scene::keyPressEvent(QKeyEvent *_event)
   case Qt::Key_F : showFullScreen(); break;
   // show windowed
   case Qt::Key_N : showNormal(); break;
+  // Start and stop the simulation
   case Qt::Key_Space : toggleAnimation(); break;
-  case Qt::Key_X : stepAnimation(); break;
 
-  case Qt::Key_B : toggleBBox(); break;
-  case Qt::Key_R : toggleRandomPlace(); break;
-  case Qt::Key_0 : resetSim(); break;
+  // Highlight previous/next Boid.
+  case Qt::Key_Right : m_flock->inspectBoid(++m_inspectIndex); break;
+  case Qt::Key_Left : m_flock->inspectBoid(--m_inspectIndex); break;
 
   default : break;
   }
@@ -254,17 +242,7 @@ void Scene::keyPressEvent(QKeyEvent *_event)
   update();
 }
 
-void Scene::resetSim()
-{
-}
-
 void Scene::timerEvent(QTimerEvent *_e)
 {
-  //m_flock->update();
   update();
 }
-
-void Scene::stepAnimation()
-{
-}
-

@@ -28,14 +28,13 @@ class QuadTree
     QuadTree(ngl::Vec3 _center, float _width/*, float _height*/, float _depth, Quadrant _quadrantType, QuadTree *_parent);
     ~QuadTree();
 
-    bool isRoot = false;
     bool isParent;  // To distinguish between leaves and nodes
     bool isEmpty;
 
     void setDefaultLocalRoot(Boid *_boid);
 
     void think(Boid *_boid);
-    void draw(const ngl::Mat4& _globalTransformationMatrix, ngl::Mat4 &_V, ngl::Mat4 &_VP);
+    void draw(const ngl::Mat4& _globalTransformationUnderCamera, int _inspectIndex);
 
   private:
     /*const*/ QuadTree *m_parent;
@@ -61,17 +60,11 @@ class QuadTree
     float m_front;
     float m_back;
 
-    Boid *m_leaf;
     std::vector<Boid*> m_allLeaves;
 
     void addBoid(Boid *_boid);
-    void addBoid2(Boid _boid);
-    void addBoid3(Boid &_boid);
     void addBoidToQuadrant(Boid *_boid);
     void testBoid(Boid *_boid);
-    void prune();
-
-    Quadrant getOpposingQuadrant(Quadrant _q);
 
     bool radiusContainsQuadTree(Boid *_boid);
     bool isNearQuadrant(Boid *_boid);
@@ -79,13 +72,7 @@ class QuadTree
     bool pointInQuad(ngl::Vec3 _point);
     Quadrant pointInQuad2(ngl::Vec3 _point);
 
-    QuadTree *NE;
-    QuadTree *NW;
-    QuadTree *SE;
-    QuadTree *SW;
-
     std::vector<QuadTree*> m_successors;
-    //std::vector<QuadTree*> m_emptySuccessors;
 };
 
 #endif // QUADTREE_H

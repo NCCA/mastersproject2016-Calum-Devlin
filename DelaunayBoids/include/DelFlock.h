@@ -11,22 +11,19 @@
 class DelFlock : public Flock
 {
   public:
-    DelFlock(const int *_flockSize, float _boidRadius, ngl::Vec3 _flockOrigin);
+    DelFlock(const int *_flockSize, ngl::Vec3 _flockOrigin, const float* _velClamp, const float* _turnClamp, const float* _avoidRadius, const float* _approachRadius, const float* _fieldOfView, const int* _neighbourLimit);
     virtual ~DelFlock();
 
-    //void debug();
-
     virtual void think();
-    virtual void draw(const ngl::Mat4 &_globalTransformationMatrix) const;
+    virtual void draw(const ngl::Mat4& _globalTransformationMatrix);
 
   private:
-    const int *m_flockSize = Flock::m_flockSize;
     int m_delaunayEdges = 3* *m_flockSize - 7;
     std::vector<DelaunayEdge> m_edges;
-    std::vector<Boid> m_cornerBoids;
 
     void setDelaunayIndices();
     bool isLeft(ngl::Vec3 *_from, ngl::Vec3 *_to, ngl::Vec3 *_side);
+    bool DelaunayDiagonalTest(DelaunayTriangle *_PDTleft,DelaunayTriangle *_PDTright);
 
     std::unique_ptr<ngl::VertexArrayObject> edges;
 };

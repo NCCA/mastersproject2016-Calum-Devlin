@@ -9,8 +9,10 @@ class DelaunayTriangle
 
   public:
     DelaunayTriangle();
+    DelaunayTriangle(Boid *_b1, Boid *_b2);
     DelaunayTriangle(Boid *_b1, Boid *_b2, Boid *_b3);
-    //DelaunayTriangle(DelaunayEdge _de1, DelaunayEdge _de2, DelaunayEdge _de3);
+
+    void update(Boid *_b3);
 
   private:
     bool m_exists;
@@ -26,6 +28,8 @@ class DelaunayTriangle
     ngl::Vec3 v2;
     ngl::Vec3 v3;
     ngl::Vec3 m_circumcenter;
+
+    // 2D vector cross method missing from ngl library.
     float cross2D(ngl::Vec2 u, ngl::Vec2 v);
 };
 

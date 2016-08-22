@@ -8,6 +8,7 @@ class DelaunayEdge
   friend class DelFlock;
   public:
     DelaunayEdge(Boid *_boid1, Boid *_boid2);
+    DelaunayEdge(Boid *_boid1, Boid *_boid2, Boid *_boidLeft, Boid *_boidRight);
     ~DelaunayEdge();
 
     void doubleBoidThink();
@@ -17,6 +18,9 @@ class DelaunayEdge
   private:
     Boid *m_boid_1;
     Boid *m_boid_2;
+    Boid *m_boid_left;
+    Boid *m_boid_right;
+
 };
 
 #endif // DELAUNAYEDGE_H
